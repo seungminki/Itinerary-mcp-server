@@ -1,0 +1,7 @@
+__pycache__
+app/uv.lock
+.python-version
+*.sh
+
+# csv data
+*.csv
