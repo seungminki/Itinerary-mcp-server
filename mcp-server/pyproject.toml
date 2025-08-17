@@ -1,0 +1,13 @@
+[project]
+name = "mcp-server-likelion-hackathon"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "langchain-mcp-adapters",
+    "langgraph",
+    "langchain",
+    "langchain-openai",
+    "fastapi",
+]
