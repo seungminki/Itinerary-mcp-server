@@ -10,4 +10,5 @@ dependencies = [
     "langchain",
     "langchain-openai",
     "fastapi",
+    "python-dotenv",
 ]

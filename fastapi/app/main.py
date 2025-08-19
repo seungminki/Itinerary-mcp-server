@@ -11,13 +11,14 @@ from langchain_openai import ChatOpenAI
 import json
 
 from schemas import Message, ChatRequest, ChatResponse
+from settings import OPENAI_API_KEY
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("🚀 애플리케이션 시작 프로세스를 시작합니다...")
 
-    model = ChatOpenAI(model="gpt-4o-mini")
+    model = ChatOpenAI(model="gpt-4o-mini", api_key=OPENAI_API_KEY)
     server_connections = {
         "travelplan_recommend": {
             "transport": "streamable_http",
