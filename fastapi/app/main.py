@@ -10,7 +10,7 @@ from langchain_openai import ChatOpenAI
 
 import json
 
-from schemas import Message, ChatRequest, ChatResponse
+from app.schemas import Message, ChatRequest, ChatResponse
 from settings import OPENAI_API_KEY
 
 
