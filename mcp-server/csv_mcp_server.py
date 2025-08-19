@@ -26,28 +26,33 @@ def _load(csv_path: str):
     return data
 
 
-@mcp.tool()
+@mcp.tool
 def fetch_restaurant():
     return _load(
         "/Users/smki/Desktop/workspace/likelion_hackathon/fastapi_likelion_hackathon/restaurant.csv"
     )
 
 
-@mcp.tool()
+@mcp.tool
 def fetch_hotel():
     return _load(
         "/Users/smki/Desktop/workspace/likelion_hackathon/fastapi_likelion_hackathon/hotel.csv"
     )
 
 
-@mcp.prompt()
+@mcp.prompt
 def configure_assistant() -> list[dict]:
     # return [{"role": "system", "content": SYSTEM_PROMPT}]
     return PromptMessage(
-        role="system", content=TextContent(type="text", text=SYSTEM_PROMPT)
+        role="assistant", content=TextContent(type="text", text=SYSTEM_PROMPT)
     )
+
+
+@mcp.prompt
+def configure_user(content: str) -> str:
+    return f"[컨텍스트 리셋] 이전 대화/주소 무시. '{content}'"
 
 
 if __name__ == "__main__":
     print("Starting MCP server...")
-    mcp.run(transport="http", host="127.0.0.1", port=9000)
+    mcp.run(transport="http", host="0.0.0.0", port=9000)
