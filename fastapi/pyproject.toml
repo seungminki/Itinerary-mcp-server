@@ -9,6 +9,7 @@ dependencies = [
     "langgraph",
     "langchain",
     "langchain-openai",
+    "langchain-google-genai",
     "fastapi",
     "python-dotenv",
 ]

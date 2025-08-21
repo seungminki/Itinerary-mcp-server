@@ -1,6 +1,6 @@
 from pydantic import BaseModel, ConfigDict
 from pydantic.alias_generators import to_camel
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, Union
 
 
 class BaseSchema(BaseModel):
@@ -11,9 +11,21 @@ class BaseSchema(BaseModel):
     )
 
 
+class ScheduleItem(BaseSchema):
+    order: int
+    name: str
+    type: str
+    address: str
+
+
+class DayPlan(BaseSchema):
+    day: int
+    schedule: List[ScheduleItem]
+
+
 class Message(BaseSchema):
     role: str
-    content: str | dict
+    content: Union[List[DayPlan], str, None] = None
 
 
 class ChatRequest(BaseSchema):

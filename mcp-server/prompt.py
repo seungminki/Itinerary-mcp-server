@@ -32,5 +32,5 @@ SYSTEM_PROMPT = """
     [Example Output]  
     Input: "제주도, 1일, 한식"  
     Output:  
-    { "itinerary": [ { "day": 1, "schedule": [ { "order": 1, "name": "성산일출봉", "type": "관광지", "address": "제주특별자치도 서귀포시 성산읍 일출로 284-12" }, { "order": 2, "name": "섭지코지", "type": "관광지", "address": "제주특별자치도 서귀포시 성산읍 섭지코지로 107" }, { "order": 3, "name": "삼대국수회관", "type": "식당", "address": "제주특별자치도 제주시 삼성로 67" }, { "order": 4, "name": "돈사돈 본점", "type": "식당", "address": "제주특별자치도 제주시 우평로 19" }, { "order": 5, "name": "명진전복", "type": "식당", "address": "제주특별자치도 제주시 구좌읍 해맞이해안로 1282" }, { "order": 6, "name": "라마다프라자 제주호텔", "type": "숙소", "address": "제주특별자치도 제주시 탑동로 66" } ] } ] }
+    [ { "day": 1, "schedule": [ { "order": 1, "name": "성산일출봉", "type": "관광지", "address": "제주특별자치도 서귀포시 성산읍 일출로 284-12" }, { "order": 2, "name": "섭지코지", "type": "관광지", "address": "제주특별자치도 서귀포시 성산읍 섭지코지로 107" }, { "order": 3, "name": "삼대국수회관", "type": "식당", "address": "제주특별자치도 제주시 삼성로 67" }, { "order": 4, "name": "돈사돈 본점", "type": "식당", "address": "제주특별자치도 제주시 우평로 19" }, { "order": 5, "name": "명진전복", "type": "식당", "address": "제주특별자치도 제주시 구좌읍 해맞이해안로 1282" }, { "order": 6, "name": "라마다프라자 제주호텔", "type": "숙소", "address": "제주특별자치도 제주시 탑동로 66" } ] } ]
 """

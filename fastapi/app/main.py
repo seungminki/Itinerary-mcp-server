@@ -7,18 +7,24 @@ from contextlib import asynccontextmanager
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from langgraph.prebuilt import create_react_agent
 from langchain_openai import ChatOpenAI
+from langchain_google_genai import ChatGoogleGenerativeAI
 
 import json
 
-from app.schemas import Message, ChatRequest, ChatResponse
-from settings import OPENAI_API_KEY
+from app.schemas import Message, ChatRequest, ChatResponse, DayPlan
+from settings import OPENAI_API_KEY, GOOGLE_API_KEY
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("🚀 애플리케이션 시작 프로세스를 시작합니다...")
 
-    model = ChatOpenAI(model="gpt-4o-mini", api_key=OPENAI_API_KEY)
+    # model = ChatOpenAI(model="gpt-4o-mini", api_key=OPENAI_API_KEY)
+    model = ChatGoogleGenerativeAI(
+        model="gemini-1.5-flash",
+        temperature=0,
+        google_api_key=GOOGLE_API_KEY,
+    )
     server_connections = {
         "travelplan_recommend": {
             "transport": "streamable_http",
@@ -73,21 +79,23 @@ async def chat(payload: ChatRequest, request: Request):
         None,
     )
 
+    tools_used = [
+        m.name for m in response["messages"] if m.type == "tool" and m.content
+    ]
+
+    content = (
+        json.loads(cleaned)
+        if (
+            cleaned := final_ai_message.content.strip()
+            .removeprefix("```json")
+            .removesuffix("```")
+            .strip()
+        )
+        else "No response"
+    )
+
     return ChatResponse(
         session_id=payload.session_id,
-        message=Message(
-            role="assistant",
-            content=(
-                json.dumps(
-                    json.loads(final_ai_message.content),
-                    ensure_ascii=False,
-                    separators=(",", ":"),
-                )
-                if final_ai_message
-                else "No response"
-            ),
-        ),
-        tools_used=[
-            m.name for m in response["messages"] if m.type == "tool" and m.content
-        ],
+        message=Message(role="assistant", content=content),
+        tools_used=tools_used,
     )
