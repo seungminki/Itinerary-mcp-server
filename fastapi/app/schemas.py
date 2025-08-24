@@ -16,6 +16,10 @@ class ScheduleItem(BaseSchema):
     name: str
     type: str
     address: str
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    description: Optional[str] = None
+    grade: str
 
 
 class DayPlan(BaseSchema):

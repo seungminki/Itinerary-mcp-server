@@ -12,4 +12,5 @@ dependencies = [
     "langchain-google-genai",
     "fastapi",
     "python-dotenv",
+    "geopy",
 ]

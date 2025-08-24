@@ -11,20 +11,21 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 
 import json
 
-from app.schemas import Message, ChatRequest, ChatResponse, DayPlan
+from app.location import get_coordinate
+from app.grade import get_grade
+from app.schemas import Message, ChatRequest, ChatResponse
 from settings import OPENAI_API_KEY, GOOGLE_API_KEY
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("🚀 애플리케이션 시작 프로세스를 시작합니다...")
-
-    # model = ChatOpenAI(model="gpt-4o-mini", api_key=OPENAI_API_KEY)
-    model = ChatGoogleGenerativeAI(
-        model="gemini-1.5-flash",
-        temperature=0,
-        google_api_key=GOOGLE_API_KEY,
-    )
+    model = ChatOpenAI(model="gpt-4o-mini", temperature=0, api_key=OPENAI_API_KEY)
+    # model = ChatGoogleGenerativeAI(
+    #     model="gemini-2.5-flash-lite",
+    #     temperature=0,
+    #     google_api_key=GOOGLE_API_KEY,
+    # )
     server_connections = {
         "travelplan_recommend": {
             "transport": "streamable_http",
@@ -83,16 +84,26 @@ async def chat(payload: ChatRequest, request: Request):
         m.name for m in response["messages"] if m.type == "tool" and m.content
     ]
 
-    content = (
-        json.loads(cleaned)
-        if (
-            cleaned := final_ai_message.content.strip()
-            .removeprefix("```json")
-            .removesuffix("```")
-            .strip()
+    try:
+        print(final_ai_message.content)
+        content = (
+            json.loads(cleaned)
+            if (
+                cleaned := final_ai_message.content.strip()
+                .removeprefix("```json")
+                .removesuffix("```")
+                .strip()
+            )
+            else cleaned
         )
-        else "No response"
-    )
+
+        content = get_coordinate(content)
+        # content = get_grade(content)
+
+    except Exception as e:
+        print(e)
+        # content = "No response"
+        content = final_ai_message.content.strip()
 
     return ChatResponse(
         session_id=payload.session_id,
