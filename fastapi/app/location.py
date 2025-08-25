@@ -1,6 +1,6 @@
 from geopy.geocoders import Nominatim
 
-geolocator = Nominatim(user_agent="fastapi-app")
+geolocator = Nominatim(user_agent="fastapi-app", timeout=10)
 
 
 def get_coordinate(payload):
