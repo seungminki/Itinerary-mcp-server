@@ -7,106 +7,97 @@ from contextlib import asynccontextmanager
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from langgraph.prebuilt import create_react_agent
 from langchain_openai import ChatOpenAI
+from langchain_core.messages import SystemMessage, HumanMessage
 from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
 
 import json
 
 from app.location import get_coordinate
 from app.grade import get_grade
-from app.schemas import Message, ChatRequest, ChatResponse
+from app.prompt import SYSTEM_PROMPT
+from app.schemas import Message, ChatRequest, ChatResponse, DayPlan
 from settings import OPENAI_API_KEY, GOOGLE_API_KEY
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    print("🚀 애플리케이션 시작 프로세스를 시작합니다...")
+    print("🚀 Application startup: Initializing resources...")
+
     model = ChatOpenAI(model="gpt-4o-mini", temperature=0, api_key=OPENAI_API_KEY)
-    # model = ChatGoogleGenerativeAI(
-    #     model="gemini-2.5-flash-lite",
-    #     temperature=0,
-    #     google_api_key=GOOGLE_API_KEY,
-    # )
-    server_connections = {
-        "travelplan_recommend": {
-            "transport": "streamable_http",
-            "url": "http://172.17.0.3:9000/mcp",
-        },
-    }
 
-    print("여러 MCP 서버에 연결 중...")
-    client = MultiServerMCPClient(server_connections)
-    print("✅ 연결이 설정되었습니다.")
-
-    all_tools = await client.get_tools()
-    print(f"🛠️ 로드된 도구: {[tool.name for tool in all_tools]}")
-
-    prompt_messages = await client.get_prompt(
-        server_name="travelplan_recommend",
-        prompt_name="configure_assistant",
-    )
-    print("📝 기본 프롬프트를 가져왔습니다.")
-
-    app.state.agent = create_react_agent(model, all_tools)
-    app.state.prompt_messages = prompt_messages
-
-    print("🤖 에이전트가 성공적으로 초기화되었습니다.")
+    app.state.model = model
+    print("✅ AI model initialized and stored successfully.")
 
     yield
 
-    print("🧹 애플리케이션 종료 및 리소스 정리 프로세스를 시작합니다...")
-    # await client.aclose()
-    print("🔌 모든 연결이 안전하게 종료되었습니다.")
+    print("🧹 Application shutdown: Cleaning up resources...")
+    app.state.model = None
+    print("🔌 Resources released.")
 
 
 app = FastAPI(lifespan=lifespan)
 
 
-@app.post("/chat")
+@app.post("/chat", response_model=ChatResponse)
 async def chat(payload: ChatRequest, request: Request):
-    agent = request.app.state.agent
-    prompt_messages = request.app.state.prompt_messages
-
-    if agent is None:
+    model = request.app.state.model
+    if not model:
         return JSONResponse(
-            status_code=503, content={"message": "Agent not initialized"}
+            status_code=503,
+            content={
+                "message": "Service Unavailable: The AI model is not initialized."
+            },
         )
 
-    response = await agent.ainvoke(
-        {"messages": prompt_messages + [payload.message.model_dump()]}
-    )
-
-    final_ai_message = next(
-        (m for m in reversed(response["messages"]) if m.type == "ai" and m.content),
-        None,
-    )
-
-    tools_used = [
-        m.name for m in response["messages"] if m.type == "tool" and m.content
+    messages = [
+        SystemMessage(content=SYSTEM_PROMPT),
+        HumanMessage(content=payload.message.content),
     ]
 
     try:
-        print(final_ai_message.content)
-        content = (
-            json.loads(cleaned)
-            if (
-                cleaned := final_ai_message.content.strip()
+        print(f"-> Invoking model with input: '{payload.message.content}'")
+        ai_response = await model.ainvoke(messages)
+
+        raw_response_str = ai_response.content
+        print(f"<- Raw response from AI: {raw_response_str}")
+
+        parsed_content = {}
+        try:
+            cleaned_str = (
+                raw_response_str.strip()
                 .removeprefix("```json")
                 .removesuffix("```")
                 .strip()
             )
-            else cleaned
-        )
 
-        content = get_coordinate(content)
-        # content = get_grade(content)
+            if cleaned_str:
+                parsed_content = json.loads(cleaned_str)
+            else:
+                parsed_content = {
+                    "error": "AI returned an empty response.",
+                    "raw_content": raw_response_str,
+                }
+
+        except json.JSONDecodeError:
+            print("⚠️ JSON parsing failed. The model did not return valid JSON.")
+            parsed_content = {
+                "error": "Failed to parse AI response as JSON.",
+                "raw_content": raw_response_str,
+            }
 
     except Exception as e:
-        print(e)
-        # content = "No response"
-        content = final_ai_message.content.strip()
+        print(f"❌ An unexpected error occurred: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"message": f"An internal error occurred: {str(e)}"},
+        )
+
+    parsed_content = get_coordinate(parsed_content)
+    parsed_content = get_grade(parsed_content)
 
     return ChatResponse(
         session_id=payload.session_id,
-        message=Message(role="assistant", content=content),
-        tools_used=tools_used,
+        message=Message(role="assistant", content=parsed_content),
     )

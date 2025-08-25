@@ -19,7 +19,7 @@ class ScheduleItem(BaseSchema):
     latitude: Optional[float] = None
     longitude: Optional[float] = None
     description: Optional[str] = None
-    grade: str
+    grade: Optional[str] = None
 
 
 class DayPlan(BaseSchema):
