@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from pydantic.alias_generators import to_camel
 from typing import Dict, List, Optional, Any, Union
 
@@ -30,6 +30,23 @@ class DayPlan(BaseSchema):
 class Message(BaseSchema):
     role: str
     content: Union[List[DayPlan], str, None] = None
+
+
+class AiScheduleItem(BaseModel):
+    order: int = Field(description="순서")
+    name: str = Field(description="장소명")
+    type: str = Field(description="유형 (관광지, 식당, 숙소 등)")
+    address: str = Field(description="주소")
+    description: str = Field(description="설명")
+
+
+class AiDayPlan(BaseModel):
+    day: int
+    schedule: List[AiScheduleItem] = Field(description="일정 목록")
+
+
+class AiDayPlanListResponse(BaseModel):
+    plans: List[DayPlan] = Field(description="일별 계획 목록")
 
 
 class ChatRequest(BaseSchema):

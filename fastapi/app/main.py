@@ -13,7 +13,7 @@ from app.location import get_coordinate
 from app.grade import get_grade
 from app.db import get_output_db
 from app.prompt import SYSTEM_PROMPT
-from app.schemas import Message, ChatRequest, ChatResponse
+from app.schemas import Message, ChatRequest, ChatResponse, AiDayPlanListResponse
 from settings import OPENAI_API_KEY, GOOGLE_API_KEY
 
 
@@ -21,7 +21,9 @@ from settings import OPENAI_API_KEY, GOOGLE_API_KEY
 async def lifespan(app: FastAPI):
     print("🚀 Application startup: Initializing resources...")
 
-    model = ChatOpenAI(model="gpt-4o-mini", temperature=0, api_key=OPENAI_API_KEY)
+    model = ChatOpenAI(
+        model="gpt-4o-mini", temperature=0, api_key=OPENAI_API_KEY
+    ).with_structured_output(AiDayPlanListResponse, method="function_calling")
 
     app.state.model = model
     print("✅ AI model initialized and stored successfully.")
@@ -66,33 +68,8 @@ async def chat(payload: ChatRequest, request: Request):
 
         try:
             ai_response = await model.ainvoke(messages)
-
-            raw_response_str = ai_response.content
+            raw_response_str = ai_response.model_dump()["plans"]
             print(f"<- Raw response from AI: {raw_response_str}")
-
-            parsed_content = {}
-            try:
-                cleaned_str = (
-                    raw_response_str.strip()
-                    .removeprefix("```json")
-                    .removesuffix("```")
-                    .strip()
-                )
-
-                if cleaned_str:
-                    parsed_content = json.loads(cleaned_str)
-                else:
-                    parsed_content = {
-                        "error": "AI returned an empty response.",
-                        "raw_content": raw_response_str,
-                    }
-
-            except json.JSONDecodeError:
-                print("⚠️ JSON parsing failed. The model did not return valid JSON.")
-                parsed_content = {
-                    "error": "Failed to parse AI response as JSON.",
-                    "raw_content": raw_response_str,
-                }
 
         except Exception as e:
             print(f"❌ An unexpected error occurred: {e}")
@@ -101,10 +78,10 @@ async def chat(payload: ChatRequest, request: Request):
                 content={"message": f"An internal error occurred: {str(e)}"},
             )
 
-        parsed_content = get_coordinate(parsed_content)
-        parsed_content = get_grade(parsed_content)
+        raw_response_str = get_coordinate(raw_response_str)
+        raw_response_str = get_grade(raw_response_str)
 
         return ChatResponse(
             session_id=payload.session_id,
-            message=Message(role="assistant", content=parsed_content),
+            message=Message(role="assistant", content=raw_response_str),
         )
