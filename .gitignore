@@ -6,4 +6,4 @@ app/uv.lock
 
 # csv data
 *.csv
-data.json
+# data.json
